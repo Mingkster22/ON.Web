@@ -1,5 +1,4 @@
 <template>
-  <!-- TODO: handle hover state via CSS instead of JS for performance -->
   <div class="flex py-4">
     <div class="w-12">
       <widgets-account-avatar :UserId="comment.UserID" />

@@ -16,10 +16,10 @@
           <span class="material-icons-outlined text-2xl">share</span>
           <p class="pl-1.5 text-sm font-bold">Share</p>
         </div>
-        <div class="flex items-center text-grayscale-900 hover:text-white cursor-pointer ml-3">
+        <button class="flex items-center mx-3" :class="SavedByUser ? 'text-accent-darker hover:text-accent' : 'text-grayscale-900 hover:text-white'" @click.stop="saveClick">
           <span class="material-icons-outlined text-2xl">bookmark_border</span>
-          <p class="pl-1.5 text-sm font-bold">Save</p>
-        </div>
+          <p class="pl-1.5 text-sm font-bold">{{ saveStatusText }}</p>
+        </button>
       </div>
       <div class="flex justify-end py-3 -mx-1">
         <ui-tag-pill v-for="tag in Tags" :key="tag" :tag="tag" class="mx-1" />
@@ -32,6 +32,8 @@
 </template>
 
 <script>
+import { mapActions, mapGetters } from 'vuex';
+
 export default {
   props: {
     content: {
@@ -45,18 +47,19 @@ export default {
   },
   data() {
     return {
-      userLikedNow: undefined
+      userLikedNow: undefined,
+      userSavedNow: undefined
     }
   },
   computed: {
     ContentID() {
-      return this.content.ContentID
+      return this.content.ContentID;
     },
     ContentData() {
       return this.content.Data || {}
     },
     Title() {
-      return this.ContentData.Title
+      return this.content.Data.Title;
     },
     Author() {
       return this.ContentData.Author
@@ -98,19 +101,51 @@ export default {
     },
     Views() {
       return Number(this.statsData.Views || 0)
+    },
+    SavedByOtherUsers() {
+      return Number(this.statsData.Saves || 0);
+    },
+    SavedByUser() {
+      if (this.userSavedNow !== undefined) return this.userSavedNow;
+      return !!this.stats.SavedByUser;
+    },
+    Saves() {
+      if (this.SavedByUser) return this.SavedByOtherUsers + 1;
+      return this.SavedByOtherUsers;
+    },
+    saveStatusText() {
+      return this.SavedByUser ? 'Saved' : 'Save';
     }
   },
   methods: {
+    ...mapActions('userBookmarks', ['addSavedPost', 'removeSavedPost']),
     likeClick() {
-      const currentLikeVal = this.LikedByUser
-      this.userLikedNow = !this.LikedByUser
-      const endpoint = this.userLikedNow ? 'like' : 'unlike'
+      const currentLikeVal = this.LikedByUser;
+      this.userLikedNow = !this.LikedByUser;
+      const endpoint = this.userLikedNow ? 'like' : 'unlike';
       this.$axios.$post(`/api/stats/${this.ContentID}/${endpoint}`, { ContentID: this.ContentID }).catch((error) => {
-        console.error('Failed to like post', error)
-        this.userLikedNow = currentLikeVal
-      })
+        console.error('Failed to like post', error);
+        this.userLikedNow = currentLikeVal;
+      });
+    },
+    saveClick() {
+      const currentSaveVal = this.SavedByUser;
+      this.userSavedNow = !this.SavedByUser;
+      const endpoint = this.userSavedNow ? 'save' : 'unsave';
+      this.$axios.$post(`/api/stats/${this.ContentID}/${endpoint}`, { ContentID: this.ContentID })
+        .then(() => {
+          this.userSavedNow = !currentSaveVal;
+          if (this.userSavedNow) {
+            this.addSavedPost(this.content);
+          } else {
+            this.removeSavedPost(this.ContentID);
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to save post', error);
+          this.userSavedNow = currentSaveVal;
+        });
     }
-  },
-  mounted() {}
-}
+  }
+};
 </script>

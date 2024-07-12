@@ -21,39 +21,45 @@ export default {
   data() {
     return {
       posts: [],
+      selectedPost: null,
+      showPublishModal: false,
       contentView: 'grid'
-    }
+    };
   },
   computed: {
     isAuthenticated() {
-      return this.$store.getters['auth/isAuthenticated']
+      return this.$store.getters['auth/isAuthenticated'];
     },
     DisplayName() {
-      return this.$store.getters['auth/DisplayName']
+      return this.$store.getters['auth/DisplayName'];
     },
     UserName() {
-      return this.$store.getters['auth/UserName']
+      return this.$store.getters['auth/UserName'];
     },
     SiteTitle() {
-      return this.$store.getters['settings/Title']
+      return this.$store.getters['settings/Title'];
+    },
+    savedPosts() {
+      return this.$store.getters['savedPosts'];
     }
   },
   methods: {
     load() {
-      this.$axios
-        .$get('/api/cms/content')
-        .then((rs) => {
-          this.posts = rs.Records
+      this.$axios.$get('/api/cms/admin/content').then((data) => {
+          console.log('Got posts', data);
+          if (data && data.Records) {
+            this.posts = data.Records;
+          }
         })
         .catch((error) => {
-          console.error('Failed', error)
-        })
+          console.error('Failed', error);
+        });
     }
   },
   mounted() {
-    this.load()
+    this.load();
   }
-}
+};
 </script>
 
 <style>
